@@ -212,6 +212,9 @@ header h1{
     }
     .carrito{
         width: 100%;
+        margin-left:auto;
+        margin-right:0;
+        opacity:1;
     }
   }
 
