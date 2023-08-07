@@ -5,7 +5,7 @@
     font-family: 'Open Sans';
 }
 header{
-    background: url(img/barrasuperiortienda.jpg);
+    background: url(../img/barrasuperiortienda.jpg);
     background-size: cover;
     background-position:center;
     height: 150px;
