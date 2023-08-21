@@ -242,3 +242,5 @@ function actualizarTotalCarrito(){
     var contenidoCarrito = itemsCarrito.innerHTML;
     localStorage.setItem('carrito', contenidoCarrito);
   }
+
+ 
