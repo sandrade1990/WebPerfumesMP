@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <script src="https://www.mercadopago.com/v2/security.js" view="item"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="../css/app.js" async></script>
     <title>El Mundo a Tus Pies</title>
     <link rel="shortcut icon" href="../img/perfume.png">
@@ -61,14 +62,12 @@
    
     <script>
      document.addEventListener('DOMContentLoaded', function () {
-        // Obtenemos todos los elementos de productos
-        var productos = document.querySelectorAll('.item');
-    
         // Agregamos un evento al formulario de búsqueda cuando se envía
         document.querySelector('form[role="search"]').addEventListener('submit', function (evento) {
           evento.preventDefault(); // Evitamos el envío del formulario
           var consultaBusqueda = document.querySelector('.custom-search-input').value.toLowerCase();
-    
+          var productos = document.querySelectorAll('.contenedor-items .item');
+
           // Recorremos todos los elementos de productos y los mostramos/ocultamos según la consulta de búsqueda
           for (var i = 0; i < productos.length; i++) {
             var tituloProducto = productos[i].querySelector('.titulo-item').innerText.toLowerCase();
@@ -85,32 +84,7 @@
 
     <section class="contenedor">
         <!-- Contenedor de elementos -->
-        <div class="contenedor-items">
-            <div class="item">
-                <span class="titulo-item">KEVIN EDT 60ML & DESODORANTE 150 ML & NECESER SET</span>
-                <img src="../img/perfumes/kevin.jpg" alt="" class="img-item">
-                <span class="precio-item">$8.000</span>
-                <button class="boton-item">Agregar al Carrito</button>
-            </div>
-            <div class="item">
-                <span class="titulo-item">CHROME EDP 100ML & TRAVEL SIZE 10ML SET</span>
-                <img src="../img/perfumes/azzaro.jpg" alt="" class="img-item">
-                <span class="precio-item">$65.000</span>
-                <button class="boton-item">Agregar al Carrito</button>
-            </div>
-            <div class="item">
-                <span class="titulo-item">POLO RED EDT 125ML & POLO RED EDT 40ML & DESODORANTE 75G SET</span>
-                <img src="../img/perfumes/polo.jpg" alt="" class="img-item">
-                <span class="precio-item">$62.900</span>
-                <button class="boton-item">Agregar al Carrito</button>
-            </div>
-            <div class="item">
-                <span class="titulo-item">BAD BOY COBALT EDP 100ML & SHOWER GEL 100ML SET</span>
-                <img src="../img/perfumes/badboy.jpg" alt="" class="img-item">
-                <span class="precio-item">$18.000</span>
-                <button class="boton-item">Agregar al Carrito</button>
-            </div>
-        </div>
+        <div class="contenedor-items" data-excel-catalog="accesorios" aria-live="polite"></div>
         <!-- Carrito de Compras -->
         <div class="carrito" id="carrito">
             <div class="header-carrito">
@@ -127,7 +101,11 @@
                         $120.000,00
                     </span>
                 </div>
-                <button class="btn-pagar">Pagar <i class="fa-solid fa-bag-shopping"></i> </button>
+                <div class="custom-form-group">
+                  <input class="form-control custom-input" type="text" id="nombre" placeholder="Nombre completo" autocomplete="name" required>
+                  <input class="form-control custom-input" type="email" id="email" placeholder="Correo electrónico" autocomplete="email" required>
+                  <button class="btn-pagar" type="button">Pedir por WhatsApp <i class="fa-brands fa-whatsapp" aria-hidden="true"></i></button>
+                </div>
             </div>
         </div>
     </section>

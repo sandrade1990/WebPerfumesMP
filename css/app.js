@@ -1,5 +1,88 @@
 //Variable que mantiene el estado visible del carrito
 var carritoVisible = false;
+var numeroWhatsAppPedidos = '5491150119136';
+
+function crearFichaProducto(producto){
+    var item = document.createElement('div');
+    item.className = 'item';
+    item.setAttribute('data-sku', producto.sku);
+
+    var titulo = document.createElement('span');
+    titulo.className = 'titulo-item';
+    titulo.textContent = producto.nombre;
+
+    var imagen = document.createElement('img');
+    imagen.className = 'img-item';
+    imagen.src = '../img/perfumes/' + encodeURIComponent(producto.imagen);
+    imagen.alt = producto.nombre;
+
+    var precio = document.createElement('span');
+    precio.className = 'precio-item';
+    precio.textContent = '$' + new Intl.NumberFormat('es-AR').format(producto.precio);
+
+    var boton = document.createElement('button');
+    boton.className = 'boton-item';
+    boton.textContent = 'Agregar al Carrito';
+
+    item.appendChild(titulo);
+    item.appendChild(imagen);
+    item.appendChild(precio);
+    item.appendChild(boton);
+    return item;
+}
+
+function cargarCatalogo(){
+    var contenedor = document.querySelector('[data-excel-catalog]');
+    if(!contenedor){
+        return Promise.resolve();
+    }
+    var categoriaPagina = String(contenedor.getAttribute('data-excel-catalog')).trim().toLowerCase();
+    if(typeof XLSX === 'undefined'){
+        return Promise.reject(new Error('No se pudo cargar el lector de Excel'));
+    }
+
+    return fetch('../data/productos.xlsx', { cache: 'no-store' })
+        .then(function(respuesta){
+            if(!respuesta.ok){
+                throw new Error('No se pudo cargar data/productos.xlsx');
+            }
+            return respuesta.arrayBuffer();
+        })
+        .then(function(datos){
+            var libro = XLSX.read(datos, { type: 'array' });
+            var hoja = libro.Sheets[libro.SheetNames[0]];
+            var filas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+            var productos = [];
+
+            filas.forEach(function(fila){
+                var campos = {};
+                Object.keys(fila).forEach(function(columna){
+                    campos[columna.trim().toLowerCase()] = fila[columna];
+                });
+
+                var sku = String(campos.sku || '').trim();
+                var nombre = String(campos.nombre || '').trim();
+                var imagen = String(campos.imagen || '').trim();
+                var categoria = String(campos.categoria || '').trim().toLowerCase();
+                var precio = typeof campos.precio === 'number'
+                    ? campos.precio
+                    : parseInt(String(campos.precio).replace(/[^0-9]/g, ''), 10);
+
+                if(sku && nombre && imagen && categoria === categoriaPagina && isFinite(precio) && precio > 0){
+                    productos.push({ sku: sku, nombre: nombre, imagen: imagen, precio: precio });
+                }
+            });
+
+            if(productos.length === 0){
+                throw new Error('El Excel no contiene productos válidos para ' + categoriaPagina);
+            }
+
+            contenedor.replaceChildren();
+            productos.forEach(function(producto){
+                contenedor.appendChild(crearFichaProducto(producto));
+            });
+        });
+}
 
 //Espermos que todos los elementos de la pàgina cargen para ejecutar el script
 if(document.readyState == 'loading'){
@@ -9,7 +92,22 @@ if(document.readyState == 'loading'){
 }
 
 function ready(){
-    
+    if(!document.querySelector('.carrito')){
+        return;
+    }
+
+    cargarCatalogo()
+        .catch(function(error){
+            console.error(error);
+            var contenedor = document.querySelector('[data-excel-catalog]');
+            if(contenedor){
+                contenedor.textContent = 'No se pudo cargar el catálogo de productos.';
+            }
+        })
+        .then(inicializarCarrito);
+}
+
+function inicializarCarrito(){
     // Cargamos el contenido del carrito desde LocalStorage (si existe)
   var carritoGuardado = localStorage.getItem('carrito');
   if (carritoGuardado) {
@@ -49,18 +147,68 @@ function ready(){
     }
 
     //Agregamos funcionalidad al botón comprar
-    document.getElementsByClassName('btn-pagar')[0].addEventListener('click',pagarClicked)
-}
-//Eliminamos todos los elementos del carrito y lo ocultamos
-function pagarClicked(){
-    alert("Gracias por la compra");
-    //Elimino todos los elmentos del carrito
-    var carritoItems = document.getElementsByClassName('carrito-items')[0];
-    while (carritoItems.hasChildNodes()){
-        carritoItems.removeChild(carritoItems.firstChild)
+    var botonPedido = document.getElementsByClassName('btn-pagar')[0];
+    if(botonPedido){
+        botonPedido.addEventListener('click',pagarClicked);
     }
-    actualizarTotalCarrito();
-    ocultarCarrito();
+}
+
+function pagarClicked(){
+    var carritoItems = document.getElementsByClassName('carrito-items')[0];
+    var items = carritoItems.getElementsByClassName('carrito-item');
+    var campoNombre = document.getElementById('nombre');
+    var campoEmail = document.getElementById('email');
+    var nombre = campoNombre ? campoNombre.value.trim() : '';
+    var email = campoEmail ? campoEmail.value.trim() : '';
+    var numero = numeroWhatsAppPedidos.replace(/\D/g, '');
+
+    if(items.length === 0){
+        alert('Agrega al menos un producto al carrito.');
+        return;
+    }
+    if(!nombre){
+        alert('Ingresa tu nombre para preparar el pedido.');
+        if(campoNombre){
+            campoNombre.focus();
+        }
+        return;
+    }
+    if(!campoEmail || !campoEmail.checkValidity()){
+        alert('Ingresa un correo electrónico válido.');
+        if(campoEmail){
+            campoEmail.focus();
+        }
+        return;
+    }
+    if(numero.length < 10 || numero.length > 15){
+        alert('Configura el número real de WhatsApp en css/app.js para recibir pedidos.');
+        return;
+    }
+
+    var lineasPedido = [];
+    for(var i=0; i<items.length; i++){
+        var producto = items[i];
+        var titulo = producto.getElementsByClassName('carrito-item-titulo')[0].innerText;
+        var cantidad = producto.getElementsByClassName('carrito-item-cantidad')[0].value;
+        var precio = producto.getElementsByClassName('carrito-item-precio')[0].innerText;
+        var subtotal = producto.getElementsByClassName('carrito-item-subtotal')[0].innerText;
+        lineasPedido.push(cantidad + ' x ' + titulo + ' | Unitario: ' + precio + ' | Subtotal: ' + subtotal);
+    }
+
+    var total = document.getElementsByClassName('carrito-precio-total')[0].innerText;
+    var mensaje = [
+        'Hola, quiero realizar este pedido:',
+        '',
+        'Nombre: ' + nombre,
+        'Correo: ' + email,
+        '',
+        'Productos:',
+        lineasPedido.join('\n'),
+        '',
+        'Total: ' + total
+    ].join('\n');
+    var urlWhatsApp = 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensaje);
+    window.open(urlWhatsApp, '_blank', 'noopener,noreferrer');
 }
 //Funciòn que controla el boton clickeado de agregar al carrito
 function agregarAlCarritoClicked(event){
